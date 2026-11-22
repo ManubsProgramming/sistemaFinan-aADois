@@ -33,11 +33,10 @@ body {
 }
 
 .app-container {
-  max-width: 1140px;
+  max-width: 1160px;
   margin: 0 auto;
 }
 
-/* Header */
 .topbar {
   background: var(--surface);
   padding: 20px 24px;
@@ -48,7 +47,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .brand {
@@ -90,6 +89,7 @@ h1 {
   border-radius: 10px;
   display: flex;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .tab-btn {
@@ -110,6 +110,68 @@ h1 {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
+/* Barra de Mês */
+.month-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 22px;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.month-display {
+  display: flex;
+  flex-direction: column;
+}
+
+.month-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.quick-months {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.month-chip {
+  padding: 6px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.month-chip.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
 /* Cards & Grids */
 .card {
   background: var(--surface);
@@ -122,11 +184,15 @@ h1 {
 .card h2 {
   font-size: 1.05rem;
   font-weight: 700;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+}
+
+.fixed-card {
+  border-top: 4px solid var(--warning);
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .kpi-grid {
@@ -158,7 +224,7 @@ h1 {
 }
 
 .kpi-label {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
@@ -181,11 +247,11 @@ h1 {
 
 .main-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: 1.38fr 1fr;
   gap: 20px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 880px) {
   .main-grid {
     grid-template-columns: 1fr;
   }
@@ -196,13 +262,6 @@ h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 10px;
 }
 
 .span-2 {
@@ -240,12 +299,11 @@ input:focus, select:focus {
   background: var(--primary);
   color: white;
   border: none;
-  padding: 12px;
+  padding: 11px 14px;
   border-radius: 10px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   cursor: pointer;
-  margin-top: 4px;
   transition: 0.2s;
 }
 
@@ -263,12 +321,22 @@ input:focus, select:focus {
   cursor: pointer;
 }
 
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Lista de Gastos */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .section-header h2 {
@@ -288,12 +356,12 @@ input:focus, select:focus {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   transition: 0.2s;
 }
 
 .gasto-item.quitado {
-  opacity: 0.6;
+  opacity: 0.65;
   background: #f8fafc;
 }
 
@@ -322,6 +390,7 @@ input:focus, select:focus {
 .tag-alta { background: var(--danger-bg); color: var(--danger); }
 .tag-media { background: var(--warning-bg); color: var(--warning); }
 .tag-baixa { background: var(--info-bg); color: var(--info); }
+.tag-fixo { background: #fef3c7; color: #92400e; }
 .tag-resp { background: #f1f5f9; color: #334155; }
 
 .progress-bar {
@@ -358,6 +427,17 @@ input:focus, select:focus {
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-paid-badge {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid #86efac;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 

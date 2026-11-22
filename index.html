@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finanças — Rendas, Parcelas e Metas</title>
+  <title>Organizador Financeiro — Mensal e Recorrente</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#4f46e5" />
@@ -12,13 +12,13 @@
 </head>
 <body>
   <div class="app-container">
-    <!-- Cabeçalho e Seletor Dinâmico -->
+    <!-- Cabeçalho -->
     <header class="topbar">
       <div class="brand">
         <div class="logo-icon">💰</div>
         <div>
           <h1>Organizador Financeiro</h1>
-          <p class="subtitle">Rendas, prioridades, parcelas e metas em um só lugar</p>
+          <p class="subtitle">Controle mensal, despesas fixas recorrentes, parcelas e metas</p>
         </div>
       </div>
 
@@ -28,26 +28,39 @@
       </div>
     </header>
 
-    <!-- Painel de Rendas e Integrantes (Pai, Mãe, Irmão, Parceiro(a), etc.) -->
+    <!-- Barra de Navegação por Mês -->
+    <section class="month-bar card">
+      <div class="month-nav">
+        <button class="btn-icon" id="btn-mes-anterior" title="Mês anterior">◀</button>
+        <div class="month-display">
+          <span class="month-label">Mês de Referência</span>
+          <input type="month" id="seletor-mes" />
+        </div>
+        <button class="btn-icon" id="btn-mes-proximo" title="Próximo mês">▶</button>
+      </div>
+      <div class="quick-months" id="atalhos-meses"></div>
+    </section>
+
+    <!-- Painel Retrátil: Gerenciar Rendas (Pai, Mãe, Irmão, Parceiro, etc.) -->
     <section class="card sal-drawer hidden" id="rendas-drawer">
       <h2>Pessoas e Rendas Mensais</h2>
-      <p class="muted">Adicione quantas pessoas fizerem parte do orçamento (ex.: Mãe, Pai, Irmão, Parceiro(a)) com seus respectivos nomes e salários.</p>
+      <p class="muted">Adicione quantas pessoas participarem do orçamento com seus nomes, vínculos e salários.</p>
 
       <form id="form-renda" class="form-grid" style="margin-bottom: 16px;">
         <div class="form-group">
           <label for="renda-nome">Nome</label>
-          <input type="text" id="renda-nome" placeholder="Ex: Ana, Carlos, Lucas..." required />
+          <input type="text" id="renda-nome" placeholder="Ex: Ana, Carlos..." required />
         </div>
 
         <div class="form-group">
-          <label for="renda-papel">Tipo / Vínculo</label>
+          <label for="renda-papel">Vínculo / Papel</label>
           <input type="text" id="renda-papel" list="sugestoes-papel" placeholder="Ex: Mãe, Pai, Irmão..." required />
           <datalist id="sugestoes-papel">
+            <option value="Principal"></option>
             <option value="Parceiro(a)"></option>
             <option value="Mãe"></option>
             <option value="Pai"></option>
             <option value="Irmão / Irmã"></option>
-            <option value="Filho(a)"></option>
             <option value="Outro"></option>
           </datalist>
         </div>
@@ -58,7 +71,7 @@
         </div>
 
         <div class="form-group" style="justify-content: flex-end;">
-          <button type="submit" class="btn-primary">+ Adicionar Pessoa / Renda</button>
+          <button type="submit" class="btn-primary">+ Adicionar Renda</button>
         </div>
       </form>
 
@@ -74,34 +87,67 @@
       </div>
 
       <div class="kpi-card">
-        <span class="kpi-label">Parcelas do Mês</span>
+        <span class="kpi-label">Despesas do Mês</span>
         <strong class="kpi-value text-danger" id="kpi-gastos">R$ 0,00</strong>
-        <span class="kpi-sub" id="kpi-gastos-sub">0 contas ativas</span>
+        <span class="kpi-sub" id="kpi-gastos-sub">Fixas + parcelas do mês</span>
       </div>
 
       <div class="kpi-card">
         <span class="kpi-label">Investimento Carro / Casa</span>
-        <strong class="kpi-value text-primary" id="kpi-investimento">R$ 400,00</strong>
-        <span class="kpi-sub" id="kpi-investimento-sub">Meta mensal reservada</span>
+        <strong class="kpi-value text-primary" id="kpi-investimento">R$ 0,00</strong>
+        <span class="kpi-sub" id="kpi-investimento-sub">Opcional</span>
       </div>
 
       <div class="kpi-card highlight-card" id="card-sobra">
         <span class="kpi-label">Quanto Vai Sobrar</span>
         <strong class="kpi-value text-success" id="kpi-sobra">R$ 0,00</strong>
-        <span class="kpi-sub" id="kpi-sobra-sub">Livre após contas e metas</span>
+        <span class="kpi-sub" id="kpi-sobra-sub">Saldo previsto no mês</span>
       </div>
     </section>
 
-    <!-- Grade Principal: Gastos + Simulador/Consultor -->
+    <!-- Grade Principal -->
     <div class="main-grid">
-      <!-- Coluna Esquerda: Adicionar Gasto e Lista -->
+      <!-- Coluna Esquerda: Fixos Mensais + Novo Gasto + Lista do Mês -->
       <div class="col-left">
+        <!-- Bloco 1: Prioridades Fixas de Todos os Meses (ex: Aluguel) -->
+        <section class="card fixed-card">
+          <div class="section-header">
+            <h2>📌 Prioridades Fixas (Todo Mês)</h2>
+            <span class="badge-neutral" id="contador-fixos">0 fixos</span>
+          </div>
+          <p class="muted">Cadastre contas que se repetem todos os meses (ex.: Aluguel, Água, Luz, Internet). Elas entram automaticamente em todos os meses.</p>
+
+          <form id="form-fixo" class="form-grid" style="margin-bottom: 14px;">
+            <div class="form-group">
+              <label>Descrição da Prioridade</label>
+              <input type="text" id="fixo-descricao" placeholder="Ex: Aluguel, Internet, Energia..." required />
+            </div>
+
+            <div class="form-group">
+              <label>Valor Mensal (R$)</label>
+              <input type="number" id="fixo-valor" step="0.01" min="0.01" placeholder="0,00" required />
+            </div>
+
+            <div class="form-group">
+              <label>Quem paga / Divisão</label>
+              <select id="fixo-responsavel"></select>
+            </div>
+
+            <div class="form-group" style="justify-content: flex-end;">
+              <button type="submit" class="btn-primary">+ Adicionar Fixo Mensal</button>
+            </div>
+          </form>
+
+          <div id="lista-fixos" class="gastos-list"></div>
+        </section>
+
+        <!-- Bloco 2: Novo Gasto Avulso ou Parcelado -->
         <section class="card">
-          <h2>Adicionar Novo Gasto</h2>
+          <h2>🛒 Adicionar Gasto / Parcelamento</h2>
           <form id="form-gasto" class="form-grid">
             <div class="form-group span-2">
               <label>Descrição</label>
-              <input type="text" id="descricao" placeholder="Ex: Mercado, Conta de Luz, Celular..." required />
+              <input type="text" id="descricao" placeholder="Ex: Mercado, Geladeira, Celular..." required />
             </div>
 
             <div class="form-group">
@@ -110,9 +156,9 @@
             </div>
 
             <div class="form-group">
-              <label>Parcelas</label>
+              <label>Quantidade de Parcelas</label>
               <select id="parcelas">
-                <option value="1">1x (À vista)</option>
+                <option value="1">1x (À vista no mês)</option>
                 <option value="2">2x</option>
                 <option value="3">3x</option>
                 <option value="4">4x</option>
@@ -127,6 +173,11 @@
             </div>
 
             <div class="form-group">
+              <label>Começa a pagar em qual mês?</label>
+              <input type="month" id="mes-inicio" required />
+            </div>
+
+            <div class="form-group">
               <label>Prioridade</label>
               <select id="prioridade">
                 <option value="alta">🔴 Alta (Essencial)</option>
@@ -135,25 +186,26 @@
               </select>
             </div>
 
-            <div class="form-group">
+            <div class="form-group span-2">
               <label>Quem paga / Divisão</label>
               <select id="responsavel"></select>
             </div>
 
-            <button type="submit" class="btn-primary span-2">+ Adicionar Gasto</button>
+            <button type="submit" class="btn-primary span-2">+ Lançar Despesa</button>
           </form>
         </section>
 
+        <!-- Bloco 3: Extrato de Despesas do Mês Selecionado -->
         <section class="card">
           <div class="section-header">
-            <h2>Controle de Parcelas</h2>
+            <h2>📅 Despesas de <span id="titulo-mes-despesas"></span></h2>
             <span class="badge-neutral" id="contador-itens">0 itens</span>
           </div>
           <div id="lista-gastos" class="gastos-list"></div>
         </section>
       </div>
 
-      <!-- Coluna Direita: Consultor e Simulador Carro/Casa -->
+      <!-- Coluna Direita: Consultor e Investimento Opcional -->
       <div class="col-right">
         <section class="card consultor-card">
           <div class="section-header">
@@ -164,35 +216,50 @@
         </section>
 
         <section class="card">
-          <h2>🚗 🏠 Simulador Carro & Casa</h2>
-          <p class="muted">Ajuste o aporte mensal (ex.: R$ 300 a R$ 500) e como dividir entre os dois sonhos:</p>
-
-          <div class="slider-box">
-            <div class="slider-header">
-              <span>Aporte Mensal Total</span>
-              <strong id="label-aporte">R$ 400,00</strong>
-            </div>
-            <input type="range" id="range-aporte" min="100" max="1500" step="50" value="400" />
+          <div class="section-header">
+            <h2>🚗 🏠 Investimento Carro & Casa</h2>
+            <label class="switch-label">
+              <input type="checkbox" id="toggle-investimento" checked />
+              <span>Ativar investimento</span>
+            </label>
           </div>
 
-          <div class="slider-box">
-            <div class="slider-header">
-              <span>Divisão: Carro (<span id="pct-carro">60%</span>) vs Casa (<span id="pct-casa">40%</span>)</span>
+          <div id="area-simulador">
+            <p class="muted">Escolha se deseja investir este mês (a partir de R$ 100) e como dividir entre carro e casa:</p>
+
+            <div class="slider-box">
+              <div class="slider-header">
+                <span>Aporte Mensal Total</span>
+                <strong id="label-aporte">R$ 400,00</strong>
+              </div>
+              <input type="range" id="range-aporte" min="100" max="1500" step="50" value="400" />
             </div>
-            <input type="range" id="range-divisao" min="0" max="100" step="10" value="60" />
+
+            <div class="slider-box">
+              <div class="slider-header">
+                <span>Divisão: Carro (<span id="pct-carro">60%</span>) vs Casa (<span id="pct-casa">40%</span>)</span>
+              </div>
+              <input type="range" id="range-divisao" min="0" max="100" step="10" value="60" />
+            </div>
+
+            <div class="sim-results">
+              <div class="sim-box">
+                <span class="sim-title">🚗 Meta Carro (<span id="valor-mes-carro">R$ 240/mês</span>)</span>
+                <div class="sim-row"><span>Em 1 ano:</span> <strong id="carro-1a">R$ 0</strong></div>
+                <div class="sim-row"><span>Em 3 anos:</span> <strong id="carro-3a">R$ 0</strong></div>
+              </div>
+
+              <div class="sim-box">
+                <span class="sim-title">🏠 Meta Casa (<span id="valor-mes-casa">R$ 160/mês</span>)</span>
+                <div class="sim-row"><span>Em 2 anos:</span> <strong id="casa-2a">R$ 0</strong></div>
+                <div class="sim-row"><span>Em 5 anos:</span> <strong id="casa-5a">R$ 0</strong></div>
+              </div>
+            </div>
           </div>
 
-          <div class="sim-results">
-            <div class="sim-box">
-              <span class="sim-title">🚗 Meta Carro (<span id="valor-mes-carro">R$ 240/mês</span>)</span>
-              <div class="sim-row"><span>Em 1 ano:</span> <strong id="carro-1a">R$ 0</strong></div>
-              <div class="sim-row"><span>Em 3 anos:</span> <strong id="carro-3a">R$ 0</strong></div>
-            </div>
-
-            <div class="sim-box">
-              <span class="sim-title">🏠 Meta Casa (<span id="valor-mes-casa">R$ 160/mês</span>)</span>
-              <div class="sim-row"><span>Em 2 anos:</span> <strong id="casa-2a">R$ 0</strong></div>
-              <div class="sim-row"><span>Em 5 anos:</span> <strong id="casa-5a">R$ 0</strong></div>
+          <div id="area-sem-investimento" class="hidden">
+            <div class="consultor-item" style="margin-bottom: 0;">
+              ⏸️ <strong>Investimento pausado:</strong> Nenhum valor está sendo descontado do saldo deste mês para carro ou casa. Ative a chave acima quando quiser retomar os aportes.
             </div>
           </div>
         </section>
