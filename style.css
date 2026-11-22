@@ -524,3 +524,54 @@ input[type="range"] {
   font-size: 0.84rem;
   margin-top: 4px;
 }
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.app-container, .card, .topbar, .kpi-grid, .main-grid, .form-grid, .grid-2, .sim-results, .gasto-item {
+  max-width: 100%;
+  min-width: 0;
+}
+
+input, select, button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 12px 10px 48px;
+  }
+
+  .topbar {
+    padding: 14px;
+  }
+
+  .header-actions, .perfil-tabs, .month-nav, .quick-months {
+    width: 100%;
+  }
+
+  .perfil-tabs, .quick-months {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .tab-btn, .month-chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .form-grid, .grid-2, .sim-results {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
+
+  .kpi-value {
+    font-size: 1.35rem;
+  }
+}
