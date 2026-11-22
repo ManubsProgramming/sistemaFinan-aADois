@@ -1,37 +1,14 @@
-const STORAGE_KEY = "financas_a_dois_prototipo_v1";
+const STORAGE_KEY = "financas_dinamicas_v2";
 
 const estadoInicial = {
-  perfilAtivo: "casal",
-  salarios: {
-    manuela: 2500,
-    wendel: 2500
-  },
+  visaoAtiva: "todos", // "todos" ou o id de uma pessoa cadastrada
+  pessoas: [
+    { id: "p-1", nome: "Pessoa 1", papel: "Principal", salario: 2500 },
+    { id: "p-2", nome: "Pessoa 2", papel: "Parceiro(a)", salario: 2500 }
+  ],
   aporteMensal: 400,
   pctCarro: 60,
-  gastos: [
-    {
-      id: "1",
-      descricao: "Mercado do Mês",
-      valorTotal: 800,
-      parcelasTotais: 1,
-      parcelaAtual: 1,
-      valorParcela: 800,
-      prioridade: "alta",
-      responsavel: "casal",
-      quitado: false
-    },
-    {
-      id: "2",
-      descricao: "Notebook / Estudos",
-      valorTotal: 2400,
-      parcelasTotais: 12,
-      parcelaAtual: 3,
-      valorParcela: 200,
-      prioridade: "media",
-      responsavel: "manuela",
-      quitado: false
-    }
-  ]
+  gastos: []
 };
 
 let estado = JSON.parse(localStorage.getItem(STORAGE_KEY)) || estadoInicial;
@@ -44,32 +21,137 @@ function moeda(valor) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// Cálculo de juros compostos mensal (aprox. 0.85% a.m. ~ 10.7% a.a. líquido)
 function calcularJurosCompostos(aporte, meses, taxaMensal = 0.0085) {
   if (aporte <= 0) return 0;
   return aporte * ((Math.pow(1 + taxaMensal, meses) - 1) / taxaMensal);
 }
 
-function obterVisaoPerfil() {
-  const p = estado.perfilAtivo;
-  const renda =
-    p === "casal"
-      ? estado.salarios.manuela + estado.salarios.wendel
-      : estado.salarios[p];
+function getPessoaById(id) {
+  return estado.pessoas.find((p) => p.id === id);
+}
+
+function renderizarAbasEResponsaveis() {
+  const switcher = document.getElementById("perfil-switcher");
+  const selectResp = document.getElementById("responsavel");
+  const respAnterior = selectResp.value;
+
+  const totalPessoas = Math.max(estado.pessoas.length, 1);
+
+  // Abas no topo
+  let tabsHtml = `<button class="tab-btn ${estado.visaoAtiva === "todos" ? "active" : ""}" data-visao="todos">Todos (Total)</button>`;
+  estado.pessoas.forEach((p) => {
+    const ativa = estado.visaoAtiva === p.id ? "active" : "";
+    tabsHtml += `<button class="tab-btn ${ativa}" data-visao="${p.id}">${p.nome} <small style="opacity:0.7;">(${p.papel})</small></button>`;
+  });
+  switcher.innerHTML = tabsHtml;
+
+  switcher.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      estado.visaoAtiva = btn.dataset.visao;
+      salvar();
+      renderizar();
+    });
+  });
+
+  // Select de responsável no formulário de gastos
+  let optsHtml = `<option value="dividido">👥 Dividir igualmente entre todos (${totalPessoas}x)</option>`;
+  estado.pessoas.forEach((p) => {
+    optsHtml += `<option value="${p.id}">👤 Só ${p.nome} (${p.papel})</option>`;
+  });
+  selectResp.innerHTML = optsHtml;
+
+  if (respAnterior && [...selectResp.options].some((o) => o.value === respAnterior)) {
+    selectResp.value = respAnterior;
+  }
+}
+
+function renderizarListaRendas() {
+  const container = document.getElementById("lista-rendas");
+
+  if (estado.pessoas.length === 0) {
+    container.innerHTML = `<p class="muted">Nenhuma pessoa/renda cadastrada. Adicione alguém acima.</p>`;
+    return;
+  }
+
+  container.innerHTML = estado.pessoas
+    .map(
+      (p) => `
+      <div class="gasto-item" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px; padding:10px 14px;">
+        <div>
+          <strong>${p.nome}</strong>
+          <span class="tag tag-resp" style="margin-left:6px;">${p.papel}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value="${p.salario}"
+            aria-label="Salário de ${p.nome}"
+            style="width:130px; padding:6px 10px;"
+            onchange="atualizarSalarioPessoa('${p.id}', this.value)"
+          />
+          ${
+            estado.pessoas.length > 1
+              ? `<button class="btn-del" onclick="removerPessoa('${p.id}')">Remover</button>`
+              : ""
+          }
+        </div>
+      </div>
+    `
+    )
+    .join("");
+}
+
+function obterVisao() {
+  const totalPessoas = Math.max(estado.pessoas.length, 1);
+
+  if (estado.visaoAtiva === "todos") {
+    const renda = estado.pessoas.reduce((acc, p) => acc + (Number(p.salario) || 0), 0);
+    const gastosVisiveis = estado.gastos.map((g) => ({
+      ...g,
+      parcelaExibida: g.valorParcela,
+      totalExibido: g.valorTotal,
+      labelResponsavel:
+        g.responsavel === "dividido"
+          ? `Dividido (${totalPessoas} pessoas)`
+          : (getPessoaById(g.responsavel)?.nome || "Pessoa removida")
+    }));
+
+    return {
+      renda,
+      gastosVisiveis,
+      aporteExibido: estado.aporteMensal,
+      legendaRenda: `${estado.pessoas.length} pessoa(s) somada(s)`,
+      legendaMeta: "Meta mensal total"
+    };
+  }
+
+  const pessoa = getPessoaById(estado.visaoAtiva) || estado.pessoas[0];
+  const renda = pessoa ? Number(pessoa.salario) || 0 : 0;
 
   const gastosVisiveis = estado.gastos
-    .filter((g) => p === "casal" || g.responsavel === p || g.responsavel === "casal")
+    .filter((g) => g.responsavel === "dividido" || g.responsavel === pessoa?.id)
     .map((g) => {
-      const divisor = p !== "casal" && g.responsavel === "casal" ? 0.5 : 1;
+      const fator = g.responsavel === "dividido" ? 1 / totalPessoas : 1;
       return {
         ...g,
-        parcelaPerfil: g.valorParcela * divisor,
-        totalPerfil: g.valorTotal * divisor
+        parcelaExibida: g.valorParcela * fator,
+        totalExibido: g.valorTotal * fator,
+        labelResponsavel:
+          g.responsavel === "dividido"
+            ? `Parte de ${pessoa.nome} (1/${totalPessoas})`
+            : `Só ${pessoa.nome}`
       };
     });
 
-  const aportePerfil = p === "casal" ? estado.aporteMensal : estado.aporteMensal / 2;
-  return { renda, gastosVisiveis, aportePerfil };
+  return {
+    renda,
+    gastosVisiveis,
+    aporteExibido: estado.aporteMensal / totalPessoas,
+    legendaRenda: `${pessoa.nome} • ${pessoa.papel}`,
+    legendaMeta: `Parte de ${pessoa.nome} (1/${totalPessoas})`
+  };
 }
 
 function atualizarConsultor(renda, gastosAtivos, aporte, sobra) {
@@ -77,25 +159,26 @@ function atualizarConsultor(renda, gastosAtivos, aporte, sobra) {
   const status = document.getElementById("status-saude");
   const mensagens = [];
 
-  const gastosBaixa = gastosAtivos.filter((g) => g.prioridade === "baixa");
-  const somaBaixa = gastosBaixa.reduce((acc, g) => acc + g.parcelaPerfil, 0);
+  const totalBaixa = gastosAtivos
+    .filter((g) => g.prioridade === "baixa")
+    .reduce((acc, g) => acc + g.parcelaExibida, 0);
 
   if (sobra < 0) {
-    status.textContent = "Atenção no Orçamento";
+    status.textContent = "Atenção";
     status.style.background = "#fee2e2";
     status.style.color = "#dc2626";
 
     mensagens.push(
-      `⚠️ <strong>Faltam ${moeda(Math.abs(sobra))}</strong> para fechar o mês investindo ${moeda(aporte)}.`
+      `⚠️ <strong>Faltam ${moeda(Math.abs(sobra))}</strong> para fechar esta visão reservando ${moeda(aporte)}.`
     );
 
-    if (somaBaixa > 0) {
+    if (totalBaixa > 0) {
       mensagens.push(
-        `✂️ Você tem <strong>${moeda(somaBaixa)}/mês</strong> em gastos de <strong>Baixa Prioridade</strong>. Reduzir ou evitar novos gastos nessa categoria já equilibra as contas.`
+        `✂️ Há <strong>${moeda(totalBaixa)}/mês</strong> em gastos de <strong>Baixa Prioridade</strong>. Cortar ou segurar esses itens ajuda a equilibrar.`
       );
     } else {
       mensagens.push(
-        `📉 Como suas contas atuais são essenciais, ajuste o aporte temporariamente para <strong>R$ 300,00</strong> até quitar a parcela mais próxima.`
+        `📉 Se os gastos são prioritários, ajuste o aporte mensal para algo entre <strong>R$ 300 e R$ 500</strong> conforme a folga.`
       );
     }
   } else if (sobra < 250) {
@@ -104,7 +187,7 @@ function atualizarConsultor(renda, gastosAtivos, aporte, sobra) {
     status.style.color = "#d97706";
 
     mensagens.push(
-      `🟡 Você consegue investir <strong>${moeda(aporte)}</strong>, mas a folga é de apenas <strong>${moeda(sobra)}</strong>. Evite parcelamentos novos este mês.`
+      `🟡 Você cobre o aporte de <strong>${moeda(aporte)}</strong>, mas sobram apenas <strong>${moeda(sobra)}</strong>. Evite novas parcelas agora.`
     );
   } else {
     status.textContent = "Saudável";
@@ -112,23 +195,16 @@ function atualizarConsultor(renda, gastosAtivos, aporte, sobra) {
     status.style.color = "#16a34a";
 
     mensagens.push(
-      `✅ Excelente! Mesmo investindo <strong>${moeda(aporte)}/mês</strong>, ainda sobram <strong>${moeda(sobra)}</strong> livres.`
+      `✅ Ótimo ritmo! Reservando <strong>${moeda(aporte)}/mês</strong>, ainda sobram <strong>${moeda(sobra)}</strong>.`
     );
-
-    if (estado.aporteMensal < 500 && sobra >= 150) {
-      mensagens.push(
-        `🚀 Há espaço no orçamento para subir o investimento do casal para <strong>R$ 500,00/mês</strong> e antecipar o carro ou a entrada da casa.`
-      );
-    }
   }
 
-  // Dica sobre maior parcela próxima de acabar
   const pertoDeQuitar = gastosAtivos.find(
     (g) => g.parcelasTotais > 1 && g.parcelasTotais - g.parcelaAtual <= 1
   );
   if (pertoDeQuitar) {
     mensagens.push(
-      `🎉 <strong>Alívio próximo:</strong> "${pertoDeQuitar.descricao}" está na reta final! Quando quitar, você libera mais <strong>${moeda(pertoDeQuitar.parcelaPerfil)}/mês</strong>.`
+      `🎉 <strong>"${pertoDeQuitar.descricao}"</strong> está na última parcela! Ao quitar, você libera <strong>${moeda(pertoDeQuitar.parcelaExibida)}/mês</strong>.`
     );
   }
 
@@ -158,20 +234,22 @@ function atualizarSimulador() {
 }
 
 function renderizar() {
-  const { renda, gastosVisiveis, aportePerfil } = obterVisaoPerfil();
-  const ativos = gastosVisiveis.filter((g) => !g.quitado);
-  const totalParcelasMes = ativos.reduce((acc, g) => acc + g.parcelaPerfil, 0);
-  const sobra = renda - totalParcelasMes - aportePerfil;
+  renderizarAbasEResponsaveis();
+  renderizarListaRendas();
 
-  // KPIs
+  const { renda, gastosVisiveis, aporteExibido, legendaRenda, legendaMeta } = obterVisao();
+  const ativos = gastosVisiveis.filter((g) => !g.quitado);
+  const totalParcelasMes = ativos.reduce((acc, g) => acc + g.parcelaExibida, 0);
+  const sobra = renda - totalParcelasMes - aporteExibido;
+
   document.getElementById("kpi-renda").textContent = moeda(renda);
-  document.getElementById("kpi-renda-sub").textContent =
-    estado.perfilAtivo === "casal" ? "Manuela + Wendel" : "Salário individual";
+  document.getElementById("kpi-renda-sub").textContent = legendaRenda;
 
   document.getElementById("kpi-gastos").textContent = moeda(totalParcelasMes);
   document.getElementById("kpi-gastos-sub").textContent = `${ativos.length} conta(s) ativa(s) no mês`;
 
-  document.getElementById("kpi-investimento").textContent = moeda(aportePerfil);
+  document.getElementById("kpi-investimento").textContent = moeda(aporteExibido);
+  document.getElementById("kpi-investimento-sub").textContent = legendaMeta;
 
   const elSobra = document.getElementById("kpi-sobra");
   const cardSobra = document.getElementById("card-sobra");
@@ -179,17 +257,11 @@ function renderizar() {
   elSobra.className = `kpi-value ${sobra < 0 ? "text-danger" : "text-success"}`;
   cardSobra.classList.toggle("negative", sobra < 0);
 
-  // Abas ativas
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.perfil === estado.perfilAtivo);
-  });
-
-  // Lista de gastos
   const container = document.getElementById("lista-gastos");
   document.getElementById("contador-itens").textContent = `${gastosVisiveis.length} itens`;
 
   if (gastosVisiveis.length === 0) {
-    container.innerHTML = `<p class="muted">Nenhum gasto registrado neste perfil.</p>`;
+    container.innerHTML = `<p class="muted">Nenhum gasto registrado nesta visão.</p>`;
   } else {
     container.innerHTML = gastosVisiveis
       .map((item) => {
@@ -197,16 +269,10 @@ function renderizar() {
           ? 100
           : Math.round(((item.parcelaAtual - 1) / item.parcelasTotais) * 100);
         const parcelasFaltando = item.quitado ? 0 : item.parcelasTotais - item.parcelaAtual + 1;
-        const saldoDevedor = parcelasFaltando * item.parcelaPerfil;
+        const saldoDevedor = parcelasFaltando * item.parcelaExibida;
 
         const labelPrioridade =
           item.prioridade === "alta" ? "Alta" : item.prioridade === "media" ? "Média" : "Baixa";
-        const labelResp =
-          item.responsavel === "casal"
-            ? "Casal 50/50"
-            : item.responsavel === "manuela"
-            ? "Manuela"
-            : "Wendel";
 
         return `
           <div class="gasto-item ${item.quitado ? "quitado" : ""}">
@@ -215,12 +281,12 @@ function renderizar() {
                 <strong>${item.descricao}</strong>
                 <div class="tags">
                   <span class="tag tag-${item.prioridade}">${labelPrioridade}</span>
-                  <span class="tag tag-resp">${labelResp}</span>
+                  <span class="tag tag-resp">${item.labelResponsavel}</span>
                 </div>
               </div>
               <div style="text-align: right;">
-                <strong>${moeda(item.parcelaPerfil)}/mês</strong>
-                <div style="font-size: 0.78rem; color: var(--muted);">Total: ${moeda(item.totalPerfil)}</div>
+                <strong>${moeda(item.parcelaExibida)}/mês</strong>
+                <div style="font-size: 0.78rem; color: var(--muted);">Total: ${moeda(item.totalExibido)}</div>
               </div>
             </div>
 
@@ -251,11 +317,32 @@ function renderizar() {
       .join("");
   }
 
-  atualizarConsultor(renda, ativos, aportePerfil, sobra);
+  atualizarConsultor(renda, ativos, aporteExibido, sobra);
   atualizarSimulador();
 }
 
-// Eventos
+// Ações globais
+window.atualizarSalarioPessoa = function (id, novoValor) {
+  const pessoa = getPessoaById(id);
+  if (!pessoa) return;
+  pessoa.salario = parseFloat(novoValor) || 0;
+  salvar();
+  renderizar();
+};
+
+window.removerPessoa = function (id) {
+  if (estado.pessoas.length <= 1) return;
+  estado.pessoas = estado.pessoas.filter((p) => p.id !== id);
+  estado.gastos = estado.gastos.map((g) =>
+    g.responsavel === id ? { ...g, responsavel: "dividido" } : g
+  );
+  if (estado.visaoAtiva === id) {
+    estado.visaoAtiva = "todos";
+  }
+  salvar();
+  renderizar();
+};
+
 window.pagarParcela = function (id) {
   const g = estado.gastos.find((item) => item.id === id);
   if (!g || g.quitado) return;
@@ -275,32 +362,28 @@ window.excluirGasto = function (id) {
   renderizar();
 };
 
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    estado.perfilAtivo = btn.dataset.perfil;
-    salvar();
-    renderizar();
+// Eventos de formulário e controles
+document.getElementById("btn-toggle-rendas").addEventListener("click", () => {
+  document.getElementById("rendas-drawer").classList.toggle("hidden");
+});
+
+document.getElementById("form-renda").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const nome = document.getElementById("renda-nome").value.trim();
+  const papel = document.getElementById("renda-papel").value.trim() || "Integrante";
+  const salario = parseFloat(document.getElementById("renda-valor").value) || 0;
+
+  if (!nome) return;
+
+  estado.pessoas.push({
+    id: `p-${Date.now()}`,
+    nome,
+    papel,
+    salario
   });
-});
 
-document.getElementById("btn-toggle-salarios").addEventListener("click", () => {
-  document.getElementById("salarios-drawer").classList.toggle("hidden");
-});
-
-const inputManuela = document.getElementById("sal-manuela");
-const inputWendel = document.getElementById("sal-wendel");
-inputManuela.value = estado.salarios.manuela;
-inputWendel.value = estado.salarios.wendel;
-
-inputManuela.addEventListener("input", (e) => {
-  estado.salarios.manuela = parseFloat(e.target.value) || 0;
   salvar();
-  renderizar();
-});
-
-inputWendel.addEventListener("input", (e) => {
-  estado.salarios.wendel = parseFloat(e.target.value) || 0;
-  salvar();
+  e.target.reset();
   renderizar();
 });
 
@@ -346,5 +429,4 @@ document.getElementById("form-gasto").addEventListener("submit", (e) => {
   renderizar();
 });
 
-// Inicializar
 renderizar();
