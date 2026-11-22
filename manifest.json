@@ -1,0 +1,16 @@
+{
+  "name": "Finanças a Dois",
+  "short_name": "Finanças 2",
+  "description": "Organização de gastos, parcelas e metas do casal",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

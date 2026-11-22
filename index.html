@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finanças a Dois — Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#4f46e5" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Cabeçalho e Seletor de Perfil -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-icon">💑</div>
+        <div>
+          <h1>Finanças a Dois</h1>
+          <p class="subtitle">Organização de gastos, parcelas e metas do casal</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="perfil-tabs" id="perfil-switcher">
+          <button class="tab-btn active" data-perfil="casal">Casal (Total)</button>
+          <button class="tab-btn" data-perfil="manuela">Manuela</button>
+          <button class="tab-btn" data-perfil="wendel">Wendel</button>
+        </div>
+        <button class="btn-outline" id="btn-toggle-salarios">⚙️ Editar Salários</button>
+      </div>
+    </header>
+
+    <!-- Painel Retrátil de Edição de Salários -->
+    <section class="card sal-drawer hidden" id="salarios-drawer">
+      <h3>Configurar Renda Mensal</h3>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="sal-manuela">Salário Manuela (R$)</label>
+          <input type="number" id="sal-manuela" step="50" />
+        </div>
+        <div class="form-group">
+          <label for="sal-wendel">Salário Wendel (R$)</label>
+          <input type="number" id="sal-wendel" step="50" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards de Resumo (KPIs) -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Renda do Perfil</span>
+        <strong class="kpi-value" id="kpi-renda">R$ 0,00</strong>
+        <span class="kpi-sub" id="kpi-renda-sub">Soma dos salários</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Parcelas do Mês</span>
+        <strong class="kpi-value text-danger" id="kpi-gastos">R$ 0,00</strong>
+        <span class="kpi-sub" id="kpi-gastos-sub">0 contas ativas</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Investimento Carro / Casa</span>
+        <strong class="kpi-value text-primary" id="kpi-investimento">R$ 400,00</strong>
+        <span class="kpi-sub">Meta mensal reservada</span>
+      </div>
+
+      <div class="kpi-card highlight-card" id="card-sobra">
+        <span class="kpi-label">Quanto Vai Sobrar</span>
+        <strong class="kpi-value text-success" id="kpi-sobra">R$ 0,00</strong>
+        <span class="kpi-sub" id="kpi-sobra-sub">Livre após contas e metas</span>
+      </div>
+    </section>
+
+    <!-- Grade Principal: Gastos + Simulador/Consultor -->
+    <div class="main-grid">
+      <!-- Coluna Esquerda: Adicionar Gasto e Lista -->
+      <div class="col-left">
+        <section class="card">
+          <h2>Adicionar Novo Gasto</h2>
+          <form id="form-gasto" class="form-grid">
+            <div class="form-group span-2">
+              <label>Descrição</label>
+              <input type="text" id="descricao" placeholder="Ex: Mercado, Geladeira, Internet..." required />
+            </div>
+
+            <div class="form-group">
+              <label>Valor Total (R$)</label>
+              <input type="number" id="valor-total" step="0.01" min="1" placeholder="0,00" required />
+            </div>
+
+            <div class="form-group">
+              <label>Parcelas</label>
+              <select id="parcelas">
+                <option value="1">1x (À vista)</option>
+                <option value="2">2x</option>
+                <option value="3">3x</option>
+                <option value="4">4x</option>
+                <option value="5">5x</option>
+                <option value="6">6x</option>
+                <option value="8">8x</option>
+                <option value="10">10x</option>
+                <option value="12">12x</option>
+                <option value="18">18x</option>
+                <option value="24">24x</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Prioridade</label>
+              <select id="prioridade">
+                <option value="alta">🔴 Alta (Essencial)</option>
+                <option value="media">🟡 Média (Importante)</option>
+                <option value="baixa">🔵 Baixa (Desejo/Lazer)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Responsável</label>
+              <select id="responsavel">
+                <option value="casal">💑 Casal (Dividir 50/50)</option>
+                <option value="manuela">👩 Só Manuela</option>
+                <option value="wendel">👨 Só Wendel</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary span-2">+ Adicionar Gasto</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-header">
+            <h2>Controle de Parcelas</h2>
+            <span class="badge-neutral" id="contador-itens">0 itens</span>
+          </div>
+          <div id="lista-gastos" class="gastos-list"></div>
+        </section>
+      </div>
+
+      <!-- Coluna Direita: Consultor e Simulador Carro/Casa -->
+      <div class="col-right">
+        <section class="card consultor-card">
+          <div class="section-header">
+            <h2>💡 O que fazer agora?</h2>
+            <span class="status-pill" id="status-saude">Analisando</span>
+          </div>
+          <div id="consultor-lista" class="consultor-content"></div>
+        </section>
+
+        <section class="card">
+          <h2>🚗 🏠 Simulador Carro & Casa</h2>
+          <p class="muted">Ajuste o aporte mensal (R$ 300 a R$ 500) e como dividir entre os dois sonhos:</p>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>Aporte Mensal Total</span>
+              <strong id="label-aporte">R$ 400,00</strong>
+            </div>
+            <input type="range" id="range-aporte" min="100" max="1000" step="50" value="400" />
+          </div>
+
+          <div class="slider-box">
+            <div class="slider-header">
+              <span>Divisão: Carro (<span id="pct-carro">60%</span>) vs Casa (<span id="pct-casa">40%</span>)</span>
+            </div>
+            <input type="range" id="range-divisao" min="0" max="100" step="10" value="60" />
+          </div>
+
+          <div class="sim-results">
+            <div class="sim-box">
+              <span class="sim-title">🚗 Meta Carro (<span id="valor-mes-carro">R$ 240/mês</span>)</span>
+              <div class="sim-row"><span>Em 1 ano:</span> <strong id="carro-1a">R$ 0</strong></div>
+              <div class="sim-row"><span>Em 3 anos:</span> <strong id="carro-3a">R$ 0</strong></div>
+            </div>
+
+            <div class="sim-box">
+              <span class="sim-title">🏠 Meta Casa (<span id="valor-mes-casa">R$ 160/mês</span>)</span>
+              <div class="sim-row"><span>Em 2 anos:</span> <strong id="casa-2a">R$ 0</strong></div>
+              <div class="sim-row"><span>Em 5 anos:</span> <strong id="casa-5a">R$ 0</strong></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
